@@ -33,7 +33,7 @@ class UPLOAD_IMAGES_TO_COS:
     RETURN_TYPES = ('STRING',)
     RETURN_NAMES = ('urls_dic_text',)
     FUNCTION = 'execute'
-    CATEGORY = 'API_Tools'
+    CATEGORY = 'API_TOOLS/UPLOAD_OBJECT_STORAGE'
 
     def execute(self, images, region, secret_id, secret_key, bucket, scheme, domain, base_dir):
         if domain == '':
@@ -79,17 +79,17 @@ class AUTO_CALLBACK_API:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ('string',)
     FUNCTION = 'execute'
-    CATEGORY = 'API_Tools'
+    CATEGORY = 'API_TOOLS/HTTP'
 
     def execute(self, images_dic_text, callback_url, headers_dic_text, params_dic_text):
         # 参数重建
         params_dic = json.loads(params_dic_text)
         params_dic['comfyui_result'] = {"images": json.loads(images_dic_text)}
         params_dic['service_name'] = socket.gethostname()
-        params_dic['service_ip'] = socket.gethostbyname(params_dic['service_name'])
         params_dic['request_id'] = str(uuid.uuid4())
         # 请求头重建
         headers_dic = json.loads(headers_dic_text)
+        response_text = ''
         for try_num in range(0, 3):
             try:
                 # 请求日志
@@ -100,11 +100,14 @@ class AUTO_CALLBACK_API:
                 if response.status_code != 200 or res_dic is None or res_dic.get('code') != 10000:
                     raise Exception(json.dumps({'error': '请求异常', 'status_code': response.status_code, 'text': response.text, 'params': params_dic}))
                 # 否则返回成功
-                return ('request success',)
+                response_text = response.text
+                logging.info(response.text)
+                break
             except Exception as e:
-                logging.error(json.dumps({'request_id': params_dic['request_id'], 'error': str(e)}))
+                response_text = json.dumps({'request_id': params_dic['request_id'], 'error': str(e)})
+                logging.error(response_text)
         # 返回失败
-        return ('request fail',)
+        return (response_text,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -114,6 +117,6 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    'UPLOAD_IMAGES_TO_COS': 'upload images to cos',
-    'AUTO_CALLBACK_API': 'auto callback api',
+    'UPLOAD_IMAGES_TO_COS': 'UPLOAD IMAGES TO COS',
+    'AUTO_CALLBACK_API': 'AUTO CALLBACK API',
 }
